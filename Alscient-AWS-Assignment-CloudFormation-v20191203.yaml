@@ -156,7 +156,7 @@ Resources:
     SAelb:
       Type: AWS::ElasticLoadBalancing::LoadBalancer
       Properties:
-        Subnets: [!Ref 'PublicSubnetB']
+        Subnets: [!Ref 'PublicSubnetB', !Ref 'PublicSubnetA']
         Instances: [!Ref 'SAInstance1']
         SecurityGroups: [!Ref 'SASGELB']
         Listeners:
@@ -166,9 +166,10 @@ Resources:
         HealthCheck:
           HealthyThreshold: '2'
           Interval: '15'
-          Target: TCP:443
+          Target: TCP:80
           Timeout: '5'
           UnhealthyThreshold: '2'
+        CrossZone: 'True'
         Tags:
           - Key: environment
             Value: Alscient-Aws-SA-Assignment
@@ -180,6 +181,11 @@ Resources:
       Properties:
         GroupDescription: SA Assignment - ELB security group
         VpcId: !Ref 'SAVPC'
+        SecurityGroupIngress:
+          - IpProtocol: tcp
+            FromPort: 80
+            ToPort: 80
+            CidrIp: 0.0.0.0/0
         Tags:
           - Key: environment
             Value: Alscient-Aws-SA-Assignment
@@ -191,6 +197,11 @@ Resources:
       Properties:
         GroupDescription: SA Assignment - App server security group
         VpcId: !Ref 'SAVPC'
+        SecurityGroupIngress:
+          - IpProtocol: tcp
+            FromPort: 80
+            ToPort: 80
+            SourceSecurityGroupId: !Ref 'SASGELB'
         Tags:
           - Key: environment
             Value: Alscient-Aws-SA-Assignment
