@@ -323,6 +323,38 @@ Resources:
         Cooldown: "300"
         AutoScalingGroupName: !Ref 'SAAWebServerGroup'
         ScalingAdjustment: -1
+
+    CPUAlarmHigh:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmDescription: Scale up if CPU > 90 for 10 min
+        MetricName: CPUUtilization
+        Namespace: AWS/EC2
+        Statistic: Average
+        Period: '300'
+        EvaluationPeriods: '2'
+        Threshold: '90'
+        AlarmActions: [ !Ref 'SAASGScaleOutPolicy']
+        ComparisonOperator: GreaterThanThreshold
+        Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !Ref "SAAWebServerGroup"
+
+    CPUAlarmLow:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmDescription: Scale up if CPU < 70 for 10 min
+        MetricName: CPUUtilization
+        Namespace: AWS/EC2
+        Statistic: Average
+        Period: '300'
+        EvaluationPeriods: '2'
+        Threshold: '70'
+        AlarmActions: [ !Ref 'SAASGScaleInPolicy']
+        ComparisonOperator: LessThanThreshold
+        Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !Ref "SAAWebServerGroup"
             
   
     SALaunchConfig:
@@ -360,38 +392,7 @@ Resources:
           - Key: Name
             Value: AppServerSecurityGroup
 
-    SABastionHost:
-      Type: AWS::EC2::Instance
-      Properties:
-        DisableApiTermination: 'false'
-        InstanceInitiatedShutdownBehavior: stop
-        ImageId: ami-70edb016
-        InstanceType: t2.micro
-        KeyName: 'EC2KP'
-        Monitoring: 'false'
-        #SubnetId: !Ref 'PublicSubnetA'
-        SecurityGroups: [!Ref 'SASGBastionHost']
-        Tags:
-          - Key: environment
-            Value: Alscient-Aws-SA-Assignment
-          - Key: Name
-            Value: !Join ['-', [BastionHost, !Ref 'CandidateName']]
-
-    SASGBastionHost:
-      Type: AWS::EC2::SecurityGroup
-      Properties:
-        GroupDescription: SA Assignment - Bastion host Security Group
-        VpcId: !Ref 'SAVPC'
-        SecurityGroupIngress:
-          - IpProtocol: tcp
-            FromPort: 22
-            ToPort: 22
-            CidrIp: 0.0.0.0/0
-        Tags:
-          - Key: environment
-            Value: Alscient-Aws-SA-Assignment
-          - Key: Name
-            Value: BastionHostSecurityGroup
+    
 
     
 Outputs:
