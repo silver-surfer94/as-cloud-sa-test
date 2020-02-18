@@ -1,0 +1,311 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+
+  AWS Solution Architect Assignment - WARNING: You will be billed for the
+  AWS resources used if you create a stack from this template.
+
+  Once the assignment is completed, delete the CloudFormation stack and 
+  terminate any other resources launched in relation to this exercise. 
+
+  Feel free to do that as soon as you have completed
+  your document/presentation and before your interview.
+
+Parameters:
+
+
+  CandidateName:
+    Description: 'Please input your first and last name:'
+    Type: String
+    MaxLength: '50'
+    MinLength: '3'
+    ConstraintDescription: Please input your full name.
+
+Resources:
+
+
+    SAVPC:
+      Type: AWS::EC2::VPC
+      Properties:
+        CidrBlock: 10.0.0.0/16
+        InstanceTenancy: default
+        EnableDnsSupport: 'true'
+        EnableDnsHostnames: 'true'
+        Tags:
+          - Key: environment
+            Value: Alscient-Aws-SA-Assignment
+          - Key: Name
+            Value: !Join ['-', [SAVPC, !Ref 'CandidateName']]
+
+    PublicSubnetA:
+      Type: AWS::EC2::Subnet
+      Properties:
+        CidrBlock: 10.0.0.0/24
+        AvailabilityZone: eu-west-1a
+        MapPublicIpOnLaunch: 'True'
+        VpcId: !Ref 'SAVPC'
+        Tags:
+          - Key: environment
+            Value: Alscient-Aws-SA-Assignment
+          - Key: Name
+            Value: !Join ['-', [PublicSubnetA, !Ref 'CandidateName']]
+
+    PublicSubnetB:
+      Type: AWS::EC2::Subnet
+      Properties:
+        CidrBlock: 10.0.1.0/24
+        AvailabilityZone: eu-west-1b
+        MapPublicIpOnLaunch: 'True'
+        VpcId: !Ref 'SAVPC'
+        Tags:
+          - Key: environment
+            Value: Alscient-Aws-SA-Assignment
+          - Key: Name
+            Value: !Join ['-', [PublicSubnetB, !Ref 'CandidateName']]
+
+    PrivateSubnetA:
+      Type: AWS::EC2::Subnet
+      Properties:
+        CidrBlock: 10.0.2.0/24
+        AvailabilityZone: eu-west-1a
+        VpcId: !Ref 'SAVPC'
+        Tags:
+          - Key: environment
+            Value: Alscient-Aws-SA-Assignment
+          - Key: Name
+            Value: !Join ['-', [PrivateSubnetA, !Ref 'CandidateName']]
+
+    PrivateSubnetB:
+      Type: AWS::EC2::Subnet
+      Properties:
+        CidrBlock: 10.0.3.0/24
+        AvailabilityZone: eu-west-1b
+        VpcId: !Ref 'SAVPC'
+        Tags:
+          - Key: environment
+            Value: Alscient-Aws-SA-Assignment
+          - Key: Name
+            Value: !Join ['-', [PrivateSubnetB, !Ref 'CandidateName']]
+
+    SAIGW:
+      Type: AWS::EC2::InternetGateway
+      Properties:
+        Tags:
+          - Key: environment
+            Value: Alscient-Aws-SA-Assignment
+          - Key: Name
+            Value: !Join ['-', [IGW, !Ref 'CandidateName']]
+
+    SANetworkACL:
+      Type: AWS::EC2::NetworkAcl
+      Properties:
+        VpcId: !Ref 'SAVPC'
+        Tags:
+          - Key: environment
+            Value: Alscient-Aws-SA-Assignment
+          - Key: Name
+            Value: !Join ['-', [NACL, !Ref 'CandidateName']]
+
+    SARoutePublic:
+      Type: AWS::EC2::RouteTable
+      Properties:
+        VpcId: !Ref 'SAVPC'
+        Tags:
+          - Key: environment
+            Value: Alscient-Aws-SA-Assignment
+          - Key: Name
+            Value: !Join ['-', [PublicRoute, !Ref 'CandidateName']]
+
+    SARoutePrivate:
+      Type: AWS::EC2::RouteTable
+      Properties:
+        VpcId: !Ref 'SAVPC'
+        Tags:
+          - Key: environment
+            Value: Alscient-Aws-SA-Assignment
+          - Key: Name
+            Value: !Join ['-', [PrivateRoute, !Ref 'CandidateName']]
+    
+    SANACLEntry1:
+      Type: AWS::EC2::NetworkAclEntry
+      Properties:
+        CidrBlock: 0.0.0.0/0
+        Egress: 'true'
+        Protocol: '-1'
+        RuleAction: allow
+        RuleNumber: '100'
+        NetworkAclId: !Ref 'SANetworkACL'
+
+    SANACLEntry2:
+      Type: AWS::EC2::NetworkAclEntry
+      Properties:
+        CidrBlock: 0.0.0.0/0
+        Protocol: '-1'
+        RuleAction: allow
+        RuleNumber: '100'
+        NetworkAclId: !Ref 'SANetworkACL'
+
+    subnetacl1:
+      Type: AWS::EC2::SubnetNetworkAclAssociation
+      Properties:
+        NetworkAclId: !Ref 'SANetworkACL'
+        SubnetId: !Ref 'PublicSubnetA'
+
+    subnetacl2:
+      Type: AWS::EC2::SubnetNetworkAclAssociation
+      Properties:
+        NetworkAclId: !Ref 'SANetworkACL'
+        SubnetId: !Ref 'PublicSubnetB'
+
+    subnetacl3:
+      Type: AWS::EC2::SubnetNetworkAclAssociation
+      Properties:
+        NetworkAclId: !Ref 'SANetworkACL'
+        SubnetId: !Ref 'PrivateSubnetA'
+
+    subnetacl4:
+      Type: AWS::EC2::SubnetNetworkAclAssociation
+      Properties:
+        NetworkAclId: !Ref 'SANetworkACL'
+        SubnetId: !Ref 'PrivateSubnetB'
+
+    SAIGWAttachment:
+      Type: AWS::EC2::VPCGatewayAttachment
+      Properties:
+        VpcId: !Ref 'SAVPC'
+        InternetGatewayId: !Ref 'SAIGW'
+
+    subnetRoutePublicA:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        RouteTableId: !Ref 'SARoutePublic'
+        SubnetId: !Ref 'PublicSubnetA'
+
+    subnetRoutePublicB:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        RouteTableId: !Ref 'SARoutePublic'
+        SubnetId: !Ref 'PublicSubnetB'
+
+    subnetRoutePrivateA:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        RouteTableId: !Ref 'SARoutePrivate'
+        SubnetId: !Ref 'PrivateSubnetA'
+
+    subnetRoutePrivateB:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        RouteTableId: !Ref 'SARoutePrivate'
+        SubnetId: !Ref 'PrivateSubnetB'
+
+    publicroute:
+      Type: AWS::EC2::Route
+      Properties:
+        DestinationCidrBlock: 0.0.0.0/0
+        RouteTableId: !Ref 'SARoutePublic'
+        GatewayId: !Ref 'SAIGW'
+      DependsOn: SAIGW
+
+    SAAppLB:
+      Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+      Properties: 
+        SecurityGroups: [!Ref 'SASGAppLB']
+        Subnets: [!Ref 'PublicSubnetB', !Ref 'PublicSubnetA']
+        Tags:
+          - Key: environment
+            Value: Alscient-Aws-SA-Assignment
+          - Key: Name
+            Value: !Join ['-', [ELB, !Ref 'CandidateName']]
+    
+    SASGAppLB:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: SA Assignment - ELB security group
+        VpcId: !Ref 'SAVPC'
+        SecurityGroupIngress:
+          - IpProtocol: tcp
+            FromPort: 80
+            ToPort: 80
+            CidrIp: 0.0.0.0/0
+        Tags:
+          - Key: environment
+            Value: Alscient-Aws-SA-Assignment
+          - Key: Name
+            Value: ELBSecurityGroup
+  
+    SAAppLBListener:
+      Type: AWS::ElasticLoadBalancingV2::Listener
+      Properties:
+        DefaultActions: 
+          - TargetGroupArn: !Ref 'SATargetGroup'
+          - Type: 'forward'
+        LoadBalancerArn: !Ref 'SAAppLB'
+        Port: 80
+        Protocol: HTTP
+            
+    SAAppLBTargetGroup:
+      Type: AWS::ElasticLoadBalancingV2::TargetGroup
+      Properties: 
+        HealthCheckEnabled: 'True'
+        HealthCheckIntervalSeconds: 10
+        HealthCheckPath: '/var/www'
+        HealthCheckTimeoutSeconds: 5
+        HealthyThresholdCount: 2
+        Port: 80
+        Protocol: 'HTTP'
+        Tags: 
+          - Key: environment
+            Value: Alscient-Aws-SA-Assignment
+          - Key: Name
+            Value: !Join ['-', [SATargetGroup, !Ref 'CandidateName']]
+        UnhealthyThresholdCount: 5
+        VpcId: !Ref 'SAVPC'
+
+
+        
+
+    SAInstance1:
+      Type: AWS::EC2::Instance
+      Properties:
+        DisableApiTermination: 'false'
+        InstanceInitiatedShutdownBehavior: stop
+        ImageId: ami-70edb016
+        InstanceType: t2.micro
+        Monitoring: 'false'
+        UserData:
+          "Fn::Base64":
+            !Sub |
+              #!/bin/bash
+              yum install httpd24 php70 mysql56-server php70-mysqlnd -y
+              yum update -y
+              service httpd start
+        Tags:
+          - Key: environment
+            Value: Alscient-Aws-SA-Assignment
+          - Key: Name
+            Value: !Join ['-', [Instance1, !Ref 'CandidateName']]
+        NetworkInterfaces:
+        - AssociatePublicIpAddress: 'true'
+          DeleteOnTermination: 'true'
+          Description: Primary network interface
+          DeviceIndex: 0
+          SubnetId: !Ref 'PublicSubnetA'
+          GroupSet: [!Ref 'SASGapp']
+    SASGapp:
+          Type: AWS::EC2::SecurityGroup
+          Properties:
+            GroupDescription: SA Assignment - App server security group
+            VpcId: !Ref 'SAVPC'
+            Tags:
+              - Key: environment
+                Value: Alscient-Aws-SA-Assignment
+              - Key: Name
+                Value: AppServerSecurityGroup
+
+    
+Outputs:
+
+
+  LoadBalancerDNSName:
+    Description: The DNSName of the load balancer
+    Value: !GetAtt SAelb.DNSName
