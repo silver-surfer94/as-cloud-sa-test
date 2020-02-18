@@ -22,7 +22,6 @@ Parameters:
 
 Resources:
 
-
     SAVPC:
       Type: AWS::EC2::VPC
       Properties:
@@ -206,6 +205,35 @@ Resources:
         GatewayId: !Ref 'SAIGW'
       DependsOn: SAIGW
 
+    SANATGw:
+      Type: AWS::EC2::NatGateway
+      Properties:
+          AllocationId:
+            Fn::GetAtt:
+            - EIP
+            - AllocationId
+          SubnetId: !Ref 'PublicSubnetA'
+          Tags:
+            - Key: environment
+              Value: Alscient-Aws-SA-Assignment
+            - Key: Name
+              Value: !Join ['-', [SANATGw, !Ref 'CandidateName']]
+
+    EIP:
+      DependsOn: SAIGWAttachment
+      Type: AWS::EC2::EIP
+      Properties:
+          Domain: vpc
+
+    Route:
+      Type: AWS::EC2::Route
+      Properties:
+          RouteTableId:
+            Ref: SARoutePrivate
+          DestinationCidrBlock: 0.0.0.0/0
+          NatGatewayId:
+            Ref: SANATGw
+      
     SAAppLB:
       Type: AWS::ElasticLoadBalancingV2::LoadBalancer
       Properties: 
@@ -248,7 +276,7 @@ Resources:
       Properties: 
         HealthCheckEnabled: 'True'
         HealthCheckIntervalSeconds: 10
-        HealthCheckPath: '/var/www'
+        HealthCheckPath: '/'
         HealthCheckTimeoutSeconds: 5
         HealthyThresholdCount: 2
         Port: 80
@@ -285,7 +313,7 @@ Resources:
         ImageId: ami-70edb016
         InstanceMonitoring: 'False'
         InstanceType: t2.micro
-        #LaunchConfigurationName: String
+        KeyName: 'EC2KP'
         SecurityGroups: [!Ref 'SASGApp']
         UserData: 
           "Fn::Base64":
@@ -293,6 +321,8 @@ Resources:
               #!/bin/bash
               yum install httpd24 php70 mysql56-server php70-mysqlnd -y
               yum update -y
+              cd /var/www/html/
+              sudo echo '<html><h1>Hello world!</h1></html>' > index.html
               service httpd start
 
     SASGApp:
@@ -313,8 +343,6 @@ Resources:
 
     
 Outputs:
-
-
   LoadBalancerDNSName:
     Description: The DNSName of the load balancer
     Value: !GetAtt SAAppLB.DNSName
