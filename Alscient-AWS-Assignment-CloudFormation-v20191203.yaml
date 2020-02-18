@@ -260,47 +260,56 @@ Resources:
             Value: !Join ['-', [SATargetGroup, !Ref 'CandidateName']]
         UnhealthyThresholdCount: 5
         VpcId: !Ref 'SAVPC'
-
-
         
-
-    SAInstance1:
-      Type: AWS::EC2::Instance
-      Properties:
-        DisableApiTermination: 'false'
-        InstanceInitiatedShutdownBehavior: stop
+    SAAWebServerGroup:
+      Type: AWS::AutoScaling::AutoScalingGroup
+      Properties: 
+        VPCZoneIdentifier: [!Ref 'PrivateSubnetA', !Ref 'PrivateSubnetB']
+        LaunchConfigurationName: !Ref 'SALaunchConfig'
+        AutoScalingGroupName: 'SA Auto Scaling Group'
+        MinSize: '2'
+        MaxSize: '4'
+        DesiredCapacity: '2'
+        TargetGroupARNs: [!Ref 'SAAppLBTargetGroup']
+        Tags: 
+          - Key: environment
+            Value: Alscient-Aws-SA-Assignment
+          - Key: Name
+            Value: !Join ['-', [WebServer, !Ref 'CandidateName']]
+  
+    SALaunchConfig:
+      Type: AWS::AutoScaling::LaunchConfiguration
+      Properties: 
+        AssociatePublicIpAddress: 'False'
         ImageId: ami-70edb016
+        InstanceId: String
+        InstanceMonitoring: Boolean
         InstanceType: t2.micro
-        Monitoring: 'false'
-        UserData:
+        #LaunchConfigurationName: String
+        SecurityGroups: [!Ref 'SAGApp']
+        UserData: 
           "Fn::Base64":
             !Sub |
               #!/bin/bash
               yum install httpd24 php70 mysql56-server php70-mysqlnd -y
               yum update -y
               service httpd start
+
+    SASGApp:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: SA Assignment - App server security group
+        VpcId: !Ref 'SAVPC'
+        SecurityGroupIngress:
+          - IpProtocol: tcp
+            FromPort: 80
+            ToPort: 80
+            SourceSecurityGroupId: !Ref 'SASGAppLB'
         Tags:
           - Key: environment
             Value: Alscient-Aws-SA-Assignment
           - Key: Name
-            Value: !Join ['-', [Instance1, !Ref 'CandidateName']]
-        NetworkInterfaces:
-        - AssociatePublicIpAddress: 'true'
-          DeleteOnTermination: 'true'
-          Description: Primary network interface
-          DeviceIndex: 0
-          SubnetId: !Ref 'PublicSubnetA'
-          GroupSet: [!Ref 'SASGapp']
-    SASGapp:
-          Type: AWS::EC2::SecurityGroup
-          Properties:
-            GroupDescription: SA Assignment - App server security group
-            VpcId: !Ref 'SAVPC'
-            Tags:
-              - Key: environment
-                Value: Alscient-Aws-SA-Assignment
-              - Key: Name
-                Value: AppServerSecurityGroup
+            Value: AppServerSecurityGroup
 
     
 Outputs:
@@ -308,4 +317,4 @@ Outputs:
 
   LoadBalancerDNSName:
     Description: The DNSName of the load balancer
-    Value: !GetAtt SAelb.DNSName
+    Value: !GetAtt SAAppLB.DNSName
