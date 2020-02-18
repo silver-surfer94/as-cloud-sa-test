@@ -375,6 +375,7 @@ Resources:
               cd /var/www/html/
               sudo echo '<html><h1>Hello world!</h1></html>' > index.html
               service httpd start
+      DependsOn: SANATGw
 
     SASGApp:
       Type: AWS::EC2::SecurityGroup
