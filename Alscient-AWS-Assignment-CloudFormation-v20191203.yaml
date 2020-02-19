@@ -403,7 +403,7 @@ Resources:
               yum install httpd24 php70 mysql56-server php70-mysqlnd -y
               yum update -y
               cd /var/www/html/
-              sudo echo '<html><h1>Hello world!</h1></html>' > index.html
+              sudo echo "<html><p>Hello world from $(curl http://169.254.169.254/latest/meta-data/instance-id)</p></html>" > index.html
               service httpd start
       DependsOn: SANATGw
 
