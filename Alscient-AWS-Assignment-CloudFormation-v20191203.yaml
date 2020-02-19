@@ -11,8 +11,6 @@ Description: |
   your document/presentation and before your interview.
 
 Parameters:
-
-
   CandidateName:
     Description: 'Please input your first and last name:'
     Type: String
@@ -50,7 +48,6 @@ Parameters:
     Type: String
 
 Resources:
-
     SAVPC:
       Type: AWS::EC2::VPC
       Properties:
