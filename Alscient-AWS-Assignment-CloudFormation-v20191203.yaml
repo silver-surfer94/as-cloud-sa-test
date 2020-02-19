@@ -453,8 +453,6 @@ Resources:
         VPCSecurityGroups: [ !Ref SARDSSG ]
         AvailabilityZone: eu-west-1a
         DBSubnetGroupName: !Ref SADBSubnetGroup
-        #MonitoringInterval: '60'
-        #MonitoringRoleArn: 'arn:aws:iam::123456789012:role/rds-monitoring-role'
 
     SARDSReadReplica: 
       Type: "AWS::RDS::DBInstance"
@@ -484,23 +482,6 @@ Resources:
           - Key: Name
             Value: SQLSecurityGroup
 
-    SABastionHost: 
-      Type: AWS::EC2::Instance
-      Properties: 
-        ImageId: ami-70edb016
-        InstanceType: t2.micro
-        KeyName: EC2KP
-        NetworkInterfaces: 
-          - AssociatePublicIpAddress: "true"
-            DeviceIndex: "0"
-            GroupSet: [ !Ref SASGBastionHost ]
-            SubnetId: !Ref PublicSubnetA
-        Tags:
-          - Key: environment
-            Value: Alscient-Aws-SA-Assignment
-          - Key: Name
-            Value: SA-BastionHost
-
     SASGBastionHost:
       Type: AWS::EC2::SecurityGroup
       Properties:
@@ -516,6 +497,48 @@ Resources:
             Value: Alscient-Aws-SA-Assignment
           - Key: Name
             Value: BastionHostSecurityGroup
+
+    SABastionHostGroup:
+      Type: AWS::AutoScaling::AutoScalingGroup
+      Properties: 
+        VPCZoneIdentifier: [!Ref 'PublicSubnetA', !Ref 'PublicSubnetB' ]
+        LaunchConfigurationName: !Ref 'SABationHostLaunchConfig'
+        MinSize: '0'
+        MaxSize: '2'
+        DesiredCapacity: '0'
+        HealthCheckGracePeriod: 120
+        Tags: 
+          - Key: environment
+            PropagateAtLaunch: 'True'
+            Value: Alscient-Aws-SA-Assignment
+          - Key: Name
+            PropagateAtLaunch: 'True'
+            Value: !Join ['-', [SABationHostGroup, !Ref 'CandidateName']]
+
+    SABastionHostGroupScheduledAction:
+      Type: AWS::AutoScaling::ScheduledAction
+      Properties: 
+        AutoScalingGroupName: !Ref SABastionHostGroup
+        DesiredCapacity: 1
+        MaxSize: 2
+        MinSize: 1
+        Recurrence: "0 9-17 * * 1-6"
+            
+    SABationHostLaunchConfig:
+      Type: AWS::AutoScaling::LaunchConfiguration
+      Properties: 
+        AssociatePublicIpAddress: 'True'
+        ImageId: ami-70edb016
+        InstanceType: t2.micro
+        KeyName: 'EC2KP'
+        SecurityGroups: [!Ref 'SASGBastionHost']
+        UserData: 
+          "Fn::Base64":
+            !Sub |
+              #!/bin/bash
+              yum update -y
+              yum install mysql -y
+      DependsOn: SANATGw
 
     
 Outputs:
