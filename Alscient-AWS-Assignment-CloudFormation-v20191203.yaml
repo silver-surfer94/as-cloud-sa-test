@@ -41,6 +41,10 @@ Parameters:
     MaxLength: '41'
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: must contain only alphanumeric characters.
+  KeyName:
+    Description: Key pair to use with bastion host
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: must bes an existing key pair
   RemoteAccessCIDR:
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/x
@@ -391,7 +395,7 @@ Resources:
         ImageId: ami-70edb016
         InstanceMonitoring: 'False'
         InstanceType: t2.micro
-        KeyName: 'EC2KP'
+        KeyName: !Ref KeyName
         SecurityGroups: [!Ref 'SASGApp']
         UserData: 
           "Fn::Base64":
@@ -527,7 +531,7 @@ Resources:
         AssociatePublicIpAddress: 'True'
         ImageId: ami-70edb016
         InstanceType: t2.micro
-        KeyName: 'EC2KP'
+        KeyName: !Ref KeyName
         SecurityGroups: [!Ref 'SASGBastionHost']
         UserData: 
           "Fn::Base64":
